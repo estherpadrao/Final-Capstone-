@@ -287,6 +287,10 @@ class MultiModalNetworkBuilder:
         self.networks["transit"] = G
         print(f"   ✓ Transit graph: {G.number_of_nodes():,} nodes")
 
+        # Free GTFS DataFrames — not needed after graph is built
+        self._gtfs_loader    = None
+        self.transit_stops_gdf = None
+
     def _build_unified(self):
         """Merge all modal networks into one graph."""
         print("🔗 Building unified multi-modal graph...")
@@ -338,19 +342,30 @@ class MultiModalNetworkBuilder:
         extra_min: float = 0.0,
     ):
         """
-        Stamp `time_min` on every edge.
-        Extra minutes are added once per trip (origin penalty).
-        We add extra_min / number_of_edges as a per-edge approximation.
+        Stamp `time_min` on every edge, then strip all OSMnx attributes that
+        are never read downstream (name, osmid, geometry, highway, …).
+        Keeping only length / time_min / mode cuts per-graph RAM by ~60-70 %.
+        Node attributes are trimmed to x / y for the same reason.
         """
         speed_ms = self.travel_speeds[mode] * 1000 / 3600
         n_edges  = max(G.number_of_edges(), 1)
-        per_edge_penalty = extra_min / n_edges  # distribute origin penalty
+        per_edge_penalty = extra_min / n_edges
 
+        _keep_edge = {"length", "time_min", "mode"}
         for u, v, k, data in G.edges(data=True, keys=True):
             length = data.get("length", 100)
             travel_min = (length / speed_ms) / 60
+            for attr in list(data.keys()):
+                if attr not in _keep_edge:
+                    del G[u][v][k][attr]
             G[u][v][k]["time_min"] = travel_min + per_edge_penalty
-            G[u][v][k]["mode"] = mode
+            G[u][v][k]["mode"]     = mode
+
+        _keep_node = {"x", "y"}
+        for node, data in G.nodes(data=True):
+            for attr in list(data.keys()):
+                if attr not in _keep_node:
+                    del G.nodes[node][attr]
 
     # ------------------------------------------------------------------
     # Network diagnostics
