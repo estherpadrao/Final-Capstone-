@@ -22,6 +22,7 @@ branca>=0.6.0
 
 # Web app
 flask>=3.0.0
+gunicorn
 
 # GTFS parsing (optional but recommended)
 gtfs-kit>=6.0.0
