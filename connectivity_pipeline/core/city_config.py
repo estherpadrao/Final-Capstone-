@@ -105,7 +105,7 @@ CITY_CONFIGS: Dict[str, Dict[str, Any]] = {
             "parking_search": 20.0,
             "bike_unlock":    1.0,
         },
-        "median_hourly_wage": 38.00,
+        "median_hourly_wage": 40.00,
         "max_travel_time":    90,
         "park_threshold":     0.90,
         "airport_locations":  [(40.6413, -73.7781), (40.7769, -73.8740)],  # JFK, LGA
@@ -140,7 +140,7 @@ CITY_CONFIGS: Dict[str, Dict[str, Any]] = {
             "parking_search": 20.0,
             "bike_unlock":    1.0,
         },
-        "median_hourly_wage": 38.00,
+        "median_hourly_wage": 40.00,
         "max_travel_time":    90,
         "park_threshold":     0.90,
         "airport_locations":  [(40.6413, -73.7781), (40.7769, -73.8740)],  # JFK, LGA
@@ -175,7 +175,7 @@ CITY_CONFIGS: Dict[str, Dict[str, Any]] = {
             "parking_search": 20.0,
             "bike_unlock":    1.0,
         },
-        "median_hourly_wage": 38.00,
+        "median_hourly_wage": 40.00,
         "max_travel_time":    90,
         "park_threshold":     0.90,
         "airport_locations":  [(40.6413, -73.7781), (40.7769, -73.8740)],  # JFK, LGA
@@ -210,7 +210,7 @@ CITY_CONFIGS: Dict[str, Dict[str, Any]] = {
             "parking_search": 20.0,
             "bike_unlock":    1.0,
         },
-        "median_hourly_wage": 38.00,
+        "median_hourly_wage": 40.00,
         "max_travel_time":    90,
         "park_threshold":     0.90,
         "airport_locations":  [(40.6413, -73.7781), (40.7769, -73.8740)],  # JFK, LGA
@@ -245,7 +245,7 @@ CITY_CONFIGS: Dict[str, Dict[str, Any]] = {
             "parking_search": 20.0,
             "bike_unlock":    1.0,
         },
-        "median_hourly_wage": 38.00,
+        "median_hourly_wage": 40.00,
         "max_travel_time":    90,
         "park_threshold":     0.90,
         "airport_locations":  [(40.6413, -73.7781), (40.7769, -73.8740)],  # JFK, LGA
