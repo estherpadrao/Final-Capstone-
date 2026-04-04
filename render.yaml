@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: final-capstone
+    runtime: python
+    rootDir: connectivity_pipeline
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --config gunicorn.conf.py webapp.app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.0"
