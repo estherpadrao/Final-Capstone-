@@ -1,0 +1,16 @@
+<!-- ===== SENSITIVITY TAB ===== -->
+<div id="tab-sensitivity" class="hidden">
+  <div class="card">
+    <div class="card-title">Parameter Sensitivity Analysis</div>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px">
+      One-at-a-time (OAT) — each parameter is varied low/high from its current baseline
+      while all others are held fixed. Requires PCI or BCI to be fully computed first.
+    </p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+      <button class="btn btn-primary" onclick="runSensitivity('pci')" style="width:auto">Run PCI Sensitivity</button>
+      <button class="btn btn-secondary" onclick="runSensitivity('bci')" style="width:auto">Run BCI Sensitivity</button>
+    </div>
+    <div id="sens-status" style="font-size:.82rem;color:var(--muted);margin-bottom:12px"></div>
+    <div id="sens-results-stack"></div>
+  </div>
+</div>

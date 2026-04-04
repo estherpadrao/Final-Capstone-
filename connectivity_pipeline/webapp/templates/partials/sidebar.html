@@ -1,0 +1,163 @@
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar">
+
+  <div class="section">
+    <div class="section-title">City</div>
+    <select id="city-select">
+      {% for c in cities %}
+      <option value="{{ c.key }}">{{ c.display }}</option>
+      {% endfor %}
+      <option disabled style="color:var(--muted);font-style:italic">+ New city</option>
+    </select>
+  </div>
+
+  <div class="section-sep"></div>
+
+  <div class="section">
+    <div class="section-title">Run Index</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="runPCI()" id="btn-pci" style="flex:1">▶ PCI</button>
+      <button class="btn btn-secondary" onclick="runBCI()" id="btn-bci" style="flex:1">▶ BCI</button>
+    </div>
+    <button class="btn btn-ghost" onclick="runBoth()" style="margin-top:6px">▶ Run Both</button>
+    <button class="btn btn-ghost" onclick="restoreResults()" style="margin-top:6px" title="Reload previously saved PCI/BCI results from disk without rerunning the full pipeline">
+      Restore Saved Results
+    </button>
+    <details class="info-box">
+      <summary>What do these buttons do?</summary>
+      <div class="info-box-body">
+        <p><strong>▶ PCI</strong> runs the full People Connectivity Index pipeline for the selected city: downloads OSM amenities, builds the walk/transit/drive network, computes Hansen accessibility, and scores every hex cell.</p>
+        <p><strong>▶ BCI</strong> runs the Business Connectivity Index: fetches census income &amp; labour data, maps commercial suppliers from OSM, then computes market, labour, and supplier accessibility for each hex.</p>
+        <p><strong>▶ Run Both</strong> executes PCI then BCI sequentially in one click — useful when you want a full picture of a city.</p>
+        <p><strong>Restore Saved Results</strong> reloads a previously computed result from disk without re-running the pipeline — much faster if you just refreshed the page or want to return to the last saved state.</p>
+      </div>
+    </details>
+  </div>
+
+  <div class="section-sep"></div>
+
+  <!-- PCI PARAMETERS -->
+  <div class="section">
+    <div class="section-title">PCI Parameters</div>
+
+    <label>Hansen <span class="tip" data-tip="Exponential decay coefficient">β</span> <small style="color:var(--muted)">(individual commuter tolerance)</small></label>
+    <div class="range-row">
+      <input type="range" id="p-beta" min="0.01" max="0.30" step="0.01" value="0.08"
+             oninput="syncVal('p-beta','p-beta-val');markDirty()">
+      <span class="range-val" id="p-beta-val">0.08</span>
+    </div>
+
+    <label>Active Street λ <small style="color:var(--muted)">(street-use bonus)</small></label>
+    <div class="range-row">
+      <input type="range" id="p-lambda" min="0" max="1" step="0.05" value="0.30"
+             oninput="syncVal('p-lambda','p-lambda-val');markDirty()">
+      <span class="range-val" id="p-lambda-val">0.30</span>
+    </div>
+
+    <label>Amenity Weights <small style="color:var(--muted)">(Zheng et al. 2021 defaults)</small></label>
+    <div style="display:grid;grid-template-columns:1fr 70px;gap:4px 8px;align-items:center;margin-top:6px">
+      <span style="font-size:.78rem">Health</span>
+      <input type="number" id="w-health" value="0.319" step="0.01" min="0" max="1" style="width:70px;text-align:right" oninput="markDirty()">
+      <span style="font-size:.78rem">Education</span>
+      <input type="number" id="w-edu" value="0.276" step="0.01" min="0" max="1" style="width:70px;text-align:right" oninput="markDirty()">
+      <span style="font-size:.78rem">Parks</span>
+      <input type="number" id="w-parks" value="0.255" step="0.01" min="0" max="1" style="width:70px;text-align:right" oninput="markDirty()">
+      <span style="font-size:.78rem">Community</span>
+      <input type="number" id="w-community" value="0.148" step="0.01" min="0" max="1" style="width:70px;text-align:right" oninput="markDirty()">
+      <span style="font-size:.78rem">Food</span>
+      <input type="number" id="w-food" value="0.0" step="0.01" min="0" max="1" style="width:70px;text-align:right" oninput="markDirty()">
+      <span style="font-size:.78rem">Transit</span>
+      <input type="number" id="w-transit" value="0.0" step="0.01" min="0" max="1" style="width:70px;text-align:right" oninput="markDirty()">
+    </div>
+
+    <label><span class="tip" data-tip="OpenStreetMap Library">OSM</span> Amenity Tags <small style="color:var(--muted)">(toggle to include/exclude)</small></label>
+    <div class="toggle-grid" id="tag-toggles">
+      <label class="toggle-item active" data-tag="health"><input type="checkbox" checked>🏥 Health</label>
+      <label class="toggle-item active" data-tag="education"><input type="checkbox" checked>🎓 Education</label>
+      <label class="toggle-item active" data-tag="parks"><input type="checkbox" checked>🌳 Parks</label>
+      <label class="toggle-item active" data-tag="transit"><input type="checkbox" checked>🚌 Transit</label>
+      <label class="toggle-item active" data-tag="food_retail"><input type="checkbox" checked>🍽 Food</label>
+      <label class="toggle-item active" data-tag="community"><input type="checkbox" checked>🤝 Community</label>
+    </div>
+    <details class="info-box">
+      <summary>What are these parameters?</summary>
+      <div class="info-box-body">
+        <p><strong>Hansen β</strong> is the exponential decay rate that controls how quickly accessibility falls off with travel time. A higher β means people are less willing to walk far — only nearby amenities count much. Lower β gives more weight to distant amenities. Default 0.08 reflects typical urban behaviour.</p>
+        <p><strong>Active Street λ</strong> adds a bonus for streets with high observed pedestrian activity (e.g. commercial frontage). Increase it to reward vibrant street life; set to 0 to use pure accessibility.</p>
+        <p><strong>Amenity Weights</strong> control the relative importance of each category in the composite mass score. Defaults follow Zheng et al. (2021). Adjust if your city has a different planning priority — e.g. raise Parks weight in a city emphasising green space.</p>
+        <p><strong>OSM Tags</strong> determine which OpenStreetMap categories are fetched as amenities. Un-checking a tag completely excludes that category from the analysis.</p>
+      </div>
+    </details>
+  </div>
+
+  <div class="section-sep"></div>
+
+  <!-- BCI PARAMETERS -->
+  <div class="section">
+    <div class="section-title">BCI Parameters</div>
+
+    <label><span class="tip" data-tip="Exponential decay coefficient">β</span> Market <small style="color:var(--muted)">(customer distance sensitivity)</small></label>
+    <div class="range-row">
+      <input type="range" id="b-beta-m" min="0.01" max="0.30" step="0.01" value="0.12"
+             oninput="syncVal('b-beta-m','b-beta-m-val');markDirty()">
+      <span class="range-val" id="b-beta-m-val">0.12</span>
+    </div>
+
+    <label><span class="tip" data-tip="Exponential decay coefficient">β</span> Labour <small style="color:var(--muted)">(worker commute tolerance)</small></label>
+    <div class="range-row">
+      <input type="range" id="b-beta-l" min="0.01" max="0.20" step="0.01" value="0.05"
+             oninput="syncVal('b-beta-l','b-beta-l-val');markDirty()">
+      <span class="range-val" id="b-beta-l-val">0.05</span>
+    </div>
+
+    <label><span class="tip" data-tip="Exponential decay coefficient">β</span> Supplier <small style="color:var(--muted)">(business service decay)</small></label>
+    <div class="range-row">
+      <input type="range" id="b-beta-s" min="0.01" max="0.25" step="0.01" value="0.10"
+             oninput="syncVal('b-beta-s','b-beta-s-val');markDirty()">
+      <span class="range-val" id="b-beta-s-val">0.10</span>
+    </div>
+
+    <label>Interface λ <small style="color:var(--muted)">(airport/urban-edge bonus)</small></label>
+    <div class="range-row">
+      <input type="range" id="b-lambda" min="0" max="0.5" step="0.05" value="0.15"
+             oninput="syncVal('b-lambda','b-lambda-val');markDirty()">
+      <span class="range-val" id="b-lambda-val">0.15</span>
+    </div>
+
+    <label>Combination Method</label>
+    <select id="bci-method" onchange="markDirty()">
+      <option value="weight_free">Weight-free (equal sum)</option>
+      <option value="weighted">Weighted</option>
+    </select>
+
+    <div id="bci-weight-inputs" class="hidden" style="margin-top:8px;display:grid;grid-template-columns:1fr 70px;gap:4px 8px;align-items:center">
+      <span style="font-size:.78rem">Market weight</span>
+      <input type="number" id="bci-w-market" value="0.40" step="0.05" min="0" max="1" style="width:70px;text-align:right" oninput="markDirty()">
+      <span style="font-size:.78rem">Labour weight</span>
+      <input type="number" id="bci-w-labour" value="0.35" step="0.05" min="0" max="1" style="width:70px;text-align:right" oninput="markDirty()">
+      <span style="font-size:.78rem">Supplier weight</span>
+      <input type="number" id="bci-w-supplier" value="0.25" step="0.05" min="0" max="1" style="width:70px;text-align:right" oninput="markDirty()">
+    </div>
+
+    <label><span class="tip" data-tip="OpenStreetMap Library">OSM</span> Supplier Tags</label>
+    <div class="toggle-grid" id="supplier-tag-toggles">
+      <label class="toggle-item active" data-tag="offices"><input type="checkbox" checked>🏢 Offices</label>
+      <label class="toggle-item active" data-tag="industrial_commercial"><input type="checkbox" checked>🏭 Industrial</label>
+      <label class="toggle-item active" data-tag="commercial_buildings"><input type="checkbox" checked>🏬 Commercial</label>
+      <label class="toggle-item active" data-tag="wholesale"><input type="checkbox" checked>📦 Wholesale</label>
+      <label class="toggle-item active" data-tag="finance"><input type="checkbox" checked>🏦 Finance</label>
+    </div>
+    <details class="info-box">
+      <summary>What are these parameters?</summary>
+      <div class="info-box-body">
+        <p><strong>β Market</strong> sets how quickly customer demand decays with travel time. Higher values mean businesses mainly attract local customers; lower values allow a wider catchment area. Default 0.12 reflects typical retail shopping behaviour.</p>
+        <p><strong>β Labour</strong> controls worker commute tolerance. A higher value means workers strongly prefer jobs close to home. Default 0.05 is more lenient, reflecting that people commute further for work than for shopping.</p>
+        <p><strong>β Supplier</strong> governs business-to-business service decay — how far firms reach for inputs and professional services. Default 0.10.</p>
+        <p><strong>Interface λ</strong> gives a bonus to hexes at urban-edge locations (near airports, major freight interchanges). Increase it if edge-of-city logistics hubs should score higher.</p>
+        <p><strong>Combination Method</strong> sets how the three components (market, labour, supplier) are combined into a single BCI score. <em>Weight-free</em> treats them equally; <em>Weighted</em> lets you set custom proportions if, for example, labour access matters most in your study area.</p>
+        <p><strong>OSM Supplier Tags</strong> determine which commercial/industrial categories are counted as business suppliers when computing supplier accessibility.</p>
+      </div>
+    </details>
+  </div>
+
+</aside>

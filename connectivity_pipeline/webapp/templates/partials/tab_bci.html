@@ -1,0 +1,43 @@
+<!-- ===== BCI TAB ===== -->
+<div id="tab-bci" class="hidden">
+  <div id="bci-placeholder" class="card placeholder">
+    <i class="fas fa-building"></i>
+    Click <b>▶ BCI</b> to compute Business Connectivity Index.
+  </div>
+  <div id="bci-content" class="hidden">
+    <div class="card">
+      <div class="card-title">BCI Summary</div>
+      <div class="stat-grid" id="bci-stats"></div>
+      <p style="font-size:.72rem;color:var(--muted);margin-top:8px">
+        ✦ Raw (pre-normalisation) values — use these for cross-city comparison.
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">BCI Mass Components</div>
+      <img id="img-bci-masses" class="viz-img" alt="bci masses" />
+    </div>
+    <div class="card">
+      <div class="card-title">BCI Mass Topographies (3D)</div>
+      <img id="img-bci-topography" class="viz-img" alt="bci mass topographies" />
+    </div>
+    <div class="card">
+      <div class="card-title">Full BCI Component Analysis</div>
+      <img id="img-bci-components" class="viz-img" alt="bci components" />
+    </div>
+    <div class="card">
+      <div class="card-title">Final BCI Map</div>
+      <iframe id="map-bci" class="map-frame"></iframe>
+      <div id="bci-nb-wrap" class="hidden" style="margin-top:18px">
+        <div style="font-size:.85rem;font-weight:600;margin-bottom:6px;color:var(--text)">
+          🏘 Neighbourhoods — Average BCI
+          <span style="font-size:.72rem;color:var(--muted);font-weight:400;margin-left:8px">Hexes with any overlap included in average</span>
+        </div>
+        <div id="bci-nb-table" style="overflow-x:auto"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">BCI Distribution</div>
+      <img id="img-bci-dist" class="viz-img" alt="bci distribution" />
+    </div>
+  </div>
+</div>

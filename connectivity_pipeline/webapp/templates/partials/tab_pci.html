@@ -1,0 +1,43 @@
+<!-- ===== PCI TAB ===== -->
+<div id="tab-pci" class="hidden">
+  <div id="pci-placeholder" class="card placeholder">
+    <i class="fas fa-play-circle"></i>
+    Select a city and click <b>▶ PCI</b> to start.
+  </div>
+  <div id="pci-content" class="hidden">
+    <div class="card">
+      <div class="card-title">PCI Summary</div>
+      <div class="stat-grid" id="pci-stats"></div>
+      <p style="font-size:.72rem;color:var(--muted);margin-top:8px">
+        ✦ Raw (pre-normalisation) values — use these for cross-city comparison.
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">Attractiveness Topography — All Layers</div>
+      <img id="img-topo-layers" class="viz-img" alt="topography layers" />
+    </div>
+    <div class="card">
+      <div class="card-title">3D Topography Surface</div>
+      <img id="img-topo-3d" class="viz-img" alt="3d topography" />
+    </div>
+    <div class="card">
+      <div class="card-title">Mass → Accessibility → PCI</div>
+      <img id="img-pci-components" class="viz-img" alt="pci components" />
+    </div>
+    <div class="card">
+      <div class="card-title">Final PCI Map</div>
+      <iframe id="map-pci" class="map-frame"></iframe>
+      <div id="pci-nb-wrap" class="hidden" style="margin-top:18px">
+        <div style="font-size:.85rem;font-weight:600;margin-bottom:6px;color:var(--text)">
+          Neighbourhoods — Average PCI
+          <span style="font-size:.72rem;color:var(--muted);font-weight:400;margin-left:8px">Hexes with any overlap included in average</span>
+        </div>
+        <div id="pci-nb-table" style="overflow-x:auto"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">PCI Distribution</div>
+      <img id="img-pci-dist" class="viz-img" alt="pci distribution" />
+    </div>
+  </div>
+</div>

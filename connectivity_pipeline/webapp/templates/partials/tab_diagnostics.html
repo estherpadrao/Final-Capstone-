@@ -1,0 +1,38 @@
+<!-- ===== DIAGNOSTICS TAB ===== -->
+<div id="tab-diagnostics" class="hidden">
+  <div class="card">
+    <div class="card-title">Network Validation</div>
+    <button class="btn btn-ghost" onclick="runNetworkDiag()" style="width:auto;margin-bottom:12px">Refresh Diagnostics</button>
+    <div id="diag-output" style="font-size:.78rem;color:var(--muted)">Click Refresh to run.</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Mass Topography Summary</div>
+    <button class="btn btn-ghost" onclick="runTopoDiag()" style="width:auto;margin-bottom:12px">Refresh</button>
+    <div id="topo-diag-output" style="overflow-x:auto"></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="tip" data-tip="What is reachable in 15min through public transit from a given hex">Isochrone</span> Validation</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <label
+        for="iso-max-origins"
+        class="tip"
+        data-tip="Top and bottom hexes in the PCI/BCI scoring used as starting point for isochrone analysis"
+        style="margin:0;white-space:nowrap"
+      >
+        Max origins per group:
+      </label>
+      <input type="number" id="iso-max-origins" value="5" min="1" max="10"
+             style="width:60px;padding:4px 6px;background:var(--bg2);border:1px solid var(--border);
+                    border-radius:4px;color:var(--fg);font-size:.85rem;text-align:center">
+      <span style="color:var(--muted);font-size:.8rem">(max 10)</span>
+      <button class="btn btn-ghost" onclick="runIsochrones()" style="width:auto">Run Isochrones</button>
+    </div>
+    <div id="iso-output"></div>
+    <div id="iso-maps" class="hidden">
+      <p style="color:var(--muted);font-size:.8rem;margin:12px 0 4px">PCI Isochrone Map:</p>
+      <iframe id="map-pci-iso" class="map-frame"></iframe>
+      <p style="color:var(--muted);font-size:.8rem;margin:12px 0 4px">BCI Isochrone Map:</p>
+      <iframe id="map-bci-iso" class="map-frame"></iframe>
+    </div>
+  </div>
+</div>

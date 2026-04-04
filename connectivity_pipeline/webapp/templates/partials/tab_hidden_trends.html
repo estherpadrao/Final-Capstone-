@@ -1,0 +1,151 @@
+<!-- ===== HIDDEN TRENDS TAB ===== -->
+<div id="tab-hidden_trends" class="hidden">
+
+  <div class="card">
+    <div class="card-title">Hidden Trends — Batch Scenario Analysis</div>
+    <p style="font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:16px">
+      A single scenario tells you what happens in one place. Hidden Trends runs many random
+      scenarios at once — across different parts of the city and at different scales — and
+      looks for patterns in the results. The city's hexes are split into three score bands
+      (Low · Mid · High). Random starting hexes are drawn from each band, and the chosen
+      scenario is applied repeatedly. The three charts reveal: whether interventions in
+      underserved areas move the city more than those in already well-connected areas;
+      whether scale (single hex vs. small cluster) amplifies or dampens the effect; and
+      whether each run tends to produce a net city gain or a net loss.
+      The <b>random seed</b> pins which specific hexes are selected — keeping the seed fixed
+      lets you compare different scenario types on the exact same starting locations;
+      changing the seed draws a new random sample to verify that patterns are stable.
+    </p>
+
+    <!-- Controls -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+                gap:12px;margin-bottom:16px;align-items:end">
+
+      <div>
+        <label>Index</label>
+        <select id="ht-index" onchange="htSyncScenarioOptions()">
+          <option value="pci">PCI</option>
+          <option value="bci">BCI</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Scenario Type</label>
+        <select id="ht-scenario-type" onchange="htSyncScenarioOptions()">
+          <optgroup label="PCI — fast (reuses travel times)" id="ht-pci-opts">
+            <option value="amenity_remove">Remove Amenity Mass</option>
+            <option value="amenity_add">Add Amenity</option>
+          </optgroup>
+          <optgroup label="BCI — fast (reuses travel times)" id="ht-bci-opts" style="display:none">
+            <option value="supplier_remove">Remove Suppliers</option>
+            <option value="supplier_add">Add Suppliers</option>
+          </optgroup>
+          <optgroup label="PCI &amp; BCI — slow (recomputes travel times)">
+            <option value="edge_penalty">Travel-Time Penalty</option>
+            <option value="edge_remove">Edge Removal</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <!-- Amenity type — shown for amenity_add only -->
+      <div id="ht-amenity-type-row" style="display:none">
+        <label>Amenity Type</label>
+        <select id="ht-amenity-type">
+          <option value="health">Health</option>
+          <option value="education" selected>Education</option>
+          <option value="parks">Parks</option>
+          <option value="community">Community</option>
+          <option value="food_retail">Food / Retail</option>
+          <option value="transit">Transit</option>
+        </select>
+      </div>
+
+      <!-- Factor — shown for edge_penalty only -->
+      <div id="ht-factor-row" style="display:none">
+        <label>Time Multiplier
+          <small style="color:var(--muted);font-weight:400"> (travel time × factor)</small>
+        </label>
+        <input type="number" id="ht-factor" value="2" min="1.1" max="20" step="0.5"
+               style="width:90px">
+      </div>
+
+      <!-- Runs per score band -->
+      <div>
+        <label>
+          Runs per score band
+          <small style="color:var(--muted);font-weight:400"> (Low · Mid · High)</small>
+        </label>
+        <input type="number" id="ht-n-per-band" value="2" min="1" max="20" step="1"
+               style="width:70px" oninput="htUpdateTotalRuns()">
+      </div>
+
+      <!-- Radius options -->
+      <div id="ht-radius-row">
+        <label>Radius (intervention scale)</label>
+        <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
+          <label style="font-weight:400;font-size:.85rem;display:flex;align-items:center;gap:6px">
+            <input type="checkbox" id="ht-radius-0" checked onchange="htUpdateTotalRuns()">
+            0 — single hex
+          </label>
+          <label style="font-weight:400;font-size:.85rem;display:flex;align-items:center;gap:6px">
+            <input type="checkbox" id="ht-radius-1" checked onchange="htUpdateTotalRuns()">
+            1 — hex + 6 neighbours
+          </label>
+        </div>
+      </div>
+
+      <!-- Expected total runs (read-only) -->
+      <div>
+        <label>Expected total runs</label>
+        <div style="margin-top:6px">
+          <span id="ht-total-runs" style="font-size:1.1rem;font-weight:700;color:var(--accent)">12</span>
+          <small style="color:var(--muted);margin-left:6px">3 bands × radii × runs</small>
+        </div>
+      </div>
+
+      <!-- Random seed -->
+      <div>
+        <label>
+          Random seed
+          <small style="color:var(--muted);font-weight:400"> (same seed = same hexes)</small>
+        </label>
+        <input type="number" id="ht-seed" value="42" min="0" max="99999" step="1"
+               style="width:90px">
+      </div>
+
+    </div>
+
+    <!-- Slow scenario warning -->
+    <div id="ht-slow-warn" class="hidden"
+         style="margin-bottom:12px;padding:8px 12px;border-radius:6px;
+                background:#2a1f0e;border:1px solid #c8a200;color:#e8c200;font-size:.8rem">
+      ⚠ Network scenarios recompute travel times from scratch — expect <b>2–10 min per run</b>.
+      Batch is capped at 3 runs (one per score band). Make sure the network is built.
+    </div>
+
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-primary" id="btn-ht-run" onclick="runHiddenTrends()"
+              style="width:auto;padding:9px 22px">
+        ▶ Run Batch Analysis
+      </button>
+      <span id="ht-status" style="font-size:.82rem;color:var(--muted)"></span>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="ht-results" class="hidden">
+
+    <!-- Aggregated insight figure -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="card-title" style="margin-bottom:0">Aggregated Patterns Across All Runs</div>
+        <button class="btn btn-secondary" onclick="htDownloadPlot()"
+                style="width:auto;padding:5px 14px;font-size:.8rem">
+          ↓ Download
+        </button>
+      </div>
+      <img id="ht-batch-plot" class="viz-img" alt="batch insight analysis" />
+    </div>
+
+  </div><!-- /ht-results -->
+</div><!-- /tab-hidden_trends -->

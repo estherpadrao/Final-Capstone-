@@ -1,0 +1,288 @@
+<!-- ===== SCENARIO TESTING TAB ===== -->
+<div id="tab-scenario" class="hidden">
+
+  <!-- ── Network Map ──────────────────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-title">Network Map
+      <span style="font-size:.75rem;font-weight:400;color:var(--muted);margin-left:8px">
+        Drive network (red) · hex grid (coloured by score) — click to select
+      </span>
+    </div>
+
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+      <button class="btn btn-primary" id="btn-load-pci-map" onclick="loadNetworkMap('pci')"
+              style="width:auto;padding:7px 18px">
+        <i class="fas fa-map"></i>&nbsp; Load PCI Map
+      </button>
+      <button class="btn btn-secondary" id="btn-load-bci-map" onclick="loadNetworkMap('bci')"
+              style="width:auto;padding:7px 18px">
+        <i class="fas fa-map"></i>&nbsp; Load BCI Map
+      </button>
+      <span style="font-size:.78rem;color:var(--muted)" id="netmap-hint">
+        Load a map first — hexes will be coloured by the selected index.
+      </span>
+    </div>
+
+    <div id="sc-net-map" class="hidden"
+         style="height:430px;border-radius:8px;overflow:hidden;
+                border:1px solid var(--border)"></div>
+
+    <!-- Edge info panel — populated on edge click -->
+    <div id="sc-edge-info" class="hidden"
+         style="margin-top:10px;padding:10px 14px;border-radius:7px;
+                background:var(--surface);border:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between;
+                  margin-bottom:8px;gap:12px;flex-wrap:wrap">
+        <span style="font-size:.7rem;font-weight:700;text-transform:uppercase;
+                     letter-spacing:.08em;color:var(--muted)">Last Clicked Edge</span>
+        <button class="btn btn-secondary" id="btn-add-last-edge"
+                onclick="scCommitLastEdge()"
+                style="width:auto;padding:4px 14px;font-size:.75rem">
+          + Add to target
+        </button>
+      </div>
+      <div style="display:grid;grid-template-columns:auto 1fr auto 1fr;
+                  gap:4px 16px;align-items:baseline;font-size:.8rem">
+        <span style="color:var(--muted)">Mode</span>
+        <span id="sc-edge-mode" style="font-weight:600"></span>
+        <span style="color:var(--muted)">Time</span>
+        <span id="sc-edge-time" style="font-weight:600;color:var(--accent)"></span>
+        <span style="color:var(--muted)">From node</span>
+        <span id="sc-edge-u" style="font-family:monospace;font-size:.74rem"></span>
+        <span style="color:var(--muted)">To node</span>
+        <span id="sc-edge-v" style="font-family:monospace;font-size:.74rem"></span>
+      </div>
+    </div>
+
+    <!-- ── Hex Picker ───────────────────────────────────────────────── -->
+    <div id="sc-picker-panel" class="hidden" style="margin-top:14px">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap">
+        <span style="font-size:.78rem;font-weight:600">
+          <i class="fas fa-th" style="margin-right:4px;color:var(--accent)"></i>Hex Picker
+        </span>
+        <input type="text" id="sc-picker-filter"
+               placeholder="Filter: ID fragment · &gt;50 · &lt;30 …"
+               oninput="scFilterHexPicker()"
+               style="flex:1;min-width:100px;font-size:.74rem;padding:3px 8px" />
+        <span id="sc-picker-count"
+              style="font-size:.72rem;color:var(--muted);white-space:nowrap"></span>
+      </div>
+      <div style="max-height:200px;overflow-y:auto;
+                  border:1px solid var(--border);border-radius:6px">
+        <table class="sticky-head" style="width:100%;border-collapse:separate;border-spacing:0;font-size:.72rem">
+          <thead><tr>
+            <th style="text-align:left;padding:4px 8px">Hex ID</th>
+            <th style="text-align:right;padding:4px 8px">Score</th>
+            <th style="padding:4px 6px"></th>
+          </tr></thead>
+          <tbody id="sc-picker-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Edge Picker ──────────────────────────────────────────────── -->
+    <div id="sc-edge-picker-panel" class="hidden" style="margin-top:14px">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap">
+        <span style="font-size:.78rem;font-weight:600">
+          <i class="fas fa-road" style="margin-right:4px;color:#c07000"></i>Edge Picker
+          <small style="color:var(--muted);font-weight:400"> — top 2 000 edges by travel time</small>
+        </span>
+        <input type="text" id="sc-edge-filter"
+               placeholder="Filter by node ID or &gt;5 &lt;2 …"
+               oninput="scFilterEdgePicker()"
+               style="flex:1;min-width:100px;font-size:.74rem;padding:3px 8px" />
+        <span id="sc-edge-picker-count"
+              style="font-size:.72rem;color:var(--muted);white-space:nowrap"></span>
+      </div>
+      <div style="max-height:200px;overflow-y:auto;
+                  border:1px solid var(--border);border-radius:6px">
+        <table class="sticky-head" style="width:100%;border-collapse:separate;border-spacing:0;font-size:.72rem">
+          <thead><tr>
+            <th style="text-align:left;padding:4px 8px">From</th>
+            <th style="text-align:left;padding:4px 8px">To</th>
+            <th style="text-align:right;padding:4px 8px">Time (min)</th>
+            <th style="padding:4px 6px"></th>
+          </tr>
+          </thead>
+          <tbody id="sc-edge-picker-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Scenario Builder ─────────────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-title">Scenario Builder</div>
+
+    <!-- Type selector -->
+    <label>Modification Type</label>
+    <select id="sc-type" onchange="onScTypeChange()">
+      <optgroup label="PCI only — fast (reuses travel times)">
+        <option value="amenity_remove">Remove Amenity Mass from Hexes</option>
+        <option value="amenity_add">Add Amenity at a Hex</option>
+      </optgroup>
+      <optgroup label="BCI only — fast (reuses travel times)">
+        <option value="supplier_remove">Remove Suppliers from Hexes</option>
+        <option value="supplier_add">Add Suppliers to Hexes</option>
+      </optgroup>
+      <optgroup label="PCI &amp; BCI — slow (recomputes travel times ~2–10 min)">
+        <option value="edge_penalty">Travel-Time Penalty in Region</option>
+        <option value="edge_remove">Edge Removal with Connectivity Guard</option>
+      </optgroup>
+    </select>
+
+    <!-- Target selection -->
+    <label style="margin-top:12px">
+      Target Hexes / Edges
+      <span style="font-size:.72rem;color:var(--muted);font-weight:400">
+        — click hexes or edges on the map · blue chips = hex cells, amber chips = edge node pairs
+      </span>
+    </label>
+    <div style="display:flex;gap:6px;margin-bottom:6px">
+      <input type="text" id="sc-hex-input"
+             placeholder="Or paste H3 hex IDs comma-separated…"
+             onkeydown="if(event.key==='Enter'||event.key===','){scAddHexFromInput();event.preventDefault()}"
+             style="flex:1;min-width:0" />
+      <button class="btn btn-ghost" onclick="scAddHexFromInput()"
+              style="width:auto;padding:6px 14px;margin:0">Add</button>
+      <button class="btn btn-ghost" onclick="scClearHexes()"
+              style="width:auto;padding:6px 12px;margin:0;color:var(--red,#f44)">✕</button>
+    </div>
+    <div id="sc-chips" style="display:flex;flex-wrap:wrap;gap:5px;min-height:20px;
+                               margin-bottom:10px"></div>
+
+    <!-- Radius -->
+    <label style="margin-top:10px">
+      K-ring Radius &nbsp;
+      <small style="color:var(--muted)">
+        Expands <em>which hexes get modified</em> (radius 0 = only the selected hex, 1 = hex + its 6 neighbours, etc.)
+        — does not change how accessibility is computed
+      </small>
+    </label>
+    <input type="number" id="sc-radius" min="0" max="10" step="1" value="0"
+           style="width:90px">
+
+    <!-- Time multiplier (edge_penalty only) -->
+    <div id="sc-factor-row" class="hidden">
+      <label style="margin-top:10px">
+        Time Multiplier &nbsp;<small style="color:var(--muted)">(travel time on edges in the region is multiplied by this factor)</small>
+      </label>
+      <input type="number" id="sc-factor" min="1.1" max="50" step="0.1" value="2"
+             style="width:90px">
+    </div>
+
+    <!-- Amenity type + count (amenity_add only) -->
+    <div id="sc-amenity-add-row" class="hidden">
+      <label style="margin-top:10px">Amenity Type</label>
+      <select id="sc-amenity-type" onchange="_updateAmenityCountLabel()"
+              style="margin-bottom:8px">
+        <option value="health">Health</option>
+        <option value="education" selected>Education</option>
+        <option value="parks">Parks</option>
+        <option value="community">Community</option>
+        <option value="food_retail">Food / Retail</option>
+        <option value="transit">Transit</option>
+      </select>
+      <label id="sc-amenity-count-lbl">Count</label>
+      <input type="number" id="sc-amenity-count" min="1" max="10000" step="1" value="1"
+             style="width:90px">
+    </div>
+
+    <!-- Supplier strength (supplier_add only) -->
+    <div id="sc-supplier-add-row" class="hidden">
+      <label style="margin-top:10px">
+        Supplier Addition Strength
+        <small style="color:var(--muted)">(N = add n average supplier's worth)</small>
+      </label>
+      <input type="number" id="sc-supplier-strength" min="0.1" max="10" step="0.1" value="1"
+             style="width:90px">
+    </div>
+
+    <!-- Warning banner (slow scenarios / type mismatch hints) -->
+    <div id="sc-build-warn" class="hidden"
+         style="margin-top:10px;padding:8px 12px;border-radius:6px;
+                background:#2a1f0e;border:1px solid #c8a200;
+                color:#e8c200;font-size:.8rem"></div>
+
+    <!-- Run buttons -->
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+      <button class="btn btn-primary" id="btn-sc-run"
+              onclick="runScenario()" style="flex:1;min-width:130px">
+        ▶ Run Scenario
+      </button>
+      <button class="btn btn-ghost" onclick="scReset()"
+              style="width:auto;padding:9px 18px">↺ Reset</button>
+    </div>
+  </div>
+
+  <!-- ── Results ──────────────────────────────────────────────────────── -->
+  <div id="sc-results" class="hidden">
+
+    <!-- Server-side warning (disconnected graph, etc.) -->
+    <div id="sc-server-warn" class="hidden"
+         style="margin-bottom:12px;padding:10px 14px;border-radius:7px;
+                background:#2a1f0e;border:1px solid #c8a200;
+                color:#e8c200;font-size:.82rem"></div>
+
+    <!-- Stats -->
+    <div class="card">
+      <div class="card-title" id="sc-result-title">Impact Summary</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div>
+          <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;
+                      letter-spacing:.08em;color:var(--muted);margin-bottom:6px">Baseline</div>
+          <div class="stat-grid" id="sc-stats-base"></div>
+        </div>
+        <div>
+          <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;
+                      letter-spacing:.08em;color:var(--accent);margin-bottom:6px">Modified</div>
+          <div class="stat-grid" id="sc-stats-mod"></div>
+        </div>
+      </div>
+
+      <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;
+                  letter-spacing:.08em;color:var(--muted);margin-bottom:6px">
+        Delta (modified − baseline)
+      </div>
+      <div class="stat-grid" id="sc-stats-delta"></div>
+    </div>
+
+    <!-- Insight plot -->
+    <div class="card">
+      <div class="card-title">Scenario Insight Analysis
+        <span style="font-size:.75rem;font-weight:400;color:var(--muted);margin-left:6px">
+          distribution shift · equity direction · neighbourhood impact
+        </span>
+      </div>
+      <img id="sc-insight-img" class="viz-img" alt="scenario insight analysis" />
+    </div>
+
+    <!-- Delta map -->
+    <div class="card">
+      <div class="card-title">Score Delta Map
+        <span style="font-size:.75rem;font-weight:400;color:var(--muted);margin-left:6px">
+          green = gain &nbsp;·&nbsp; red = loss
+        </span>
+      </div>
+      <iframe id="sc-delta-map" class="map-frame" style="height:440px"></iframe>
+    </div>
+
+    <!-- Top 10 hexes -->
+    <div class="card">
+      <div class="card-title">Top 10 Hexes Most Affected</div>
+      <div style="overflow-x:auto">
+        <table id="sc-top-table">
+          <thead>
+            <tr>
+              <th>#</th><th>Hex ID</th><th>Neighbourhood</th>
+              <th style="text-align:right">Δ Score</th>
+            </tr>
+          </thead>
+          <tbody id="sc-top-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /sc-results -->
+</div><!-- /tab-scenario -->

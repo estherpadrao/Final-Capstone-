@@ -1,0 +1,35 @@
+<!-- ===== COMPARE TAB ===== -->
+<div id="tab-compare" class="hidden">
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="runCompare()" id="btn-compare" style="width:auto;padding:9px 20px">
+      Run Comparison
+    </button>
+    <span id="compare-error-msg" style="color:var(--red);font-size:.82rem;font-weight:500"></span>
+  </div>
+  <div id="compare-placeholder" class="card placeholder">
+    <i class="fas fa-code-compare"></i>
+    Run both PCI and BCI to unlock comparative analysis.
+  </div>
+  <div id="compare-content" class="hidden">
+    <div class="card">
+      <div class="card-title">🔗 Correlation & Key Metrics</div>
+      <div class="stat-grid" id="compare-stats"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Scatter Plot & Density</div>
+      <img id="img-scatter" class="viz-img" alt="scatter" />
+    </div>
+    <div class="card">
+      <div class="card-title">Distribution Comparison</div>
+      <img id="img-dist-compare" class="viz-img" alt="distribution compare" />
+    </div>
+    <div class="card">
+      <div class="card-title">Spatial Comparison (4 panels)</div>
+      <img id="img-spatial" class="viz-img" alt="spatial comparison" />
+    </div>
+    <div class="card">
+      <div class="card-title">Interactive Comparison Map</div>
+      <iframe id="map-compare" class="map-frame"></iframe>
+    </div>
+  </div>
+</div>
