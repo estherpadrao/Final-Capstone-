@@ -6,6 +6,9 @@ Each tag category can be toggled on/off at runtime.
 Used by both PCI (amenities) and BCI (suppliers).
 """
 
+import os
+import pickle
+import hashlib
 import osmnx as ox
 import geopandas as gpd
 import pandas as pd
@@ -61,6 +64,20 @@ BCI_SUPPLIER_TAGS: Dict[str, dict] = {
 
 
 # ---------------------------------------------------------------------------
+# Shared cache helper
+# ---------------------------------------------------------------------------
+
+def _get_cache_dir() -> str:
+    cache_dir = os.path.join(os.path.dirname(__file__), "../../data/cache")
+    cache_dir = os.path.normpath(cache_dir)
+    os.makedirs(cache_dir, exist_ok=True)
+    return cache_dir
+
+def _boundary_hash(boundary) -> str:
+    return hashlib.md5(boundary.wkb).hexdigest()[:12]
+
+
+# ---------------------------------------------------------------------------
 # PCI amenity fetcher
 # ---------------------------------------------------------------------------
 
@@ -84,8 +101,13 @@ class OSMDataFetcher:
             boundary = unary_union(boundary.to_crs(4326).geometry)
         self.boundary = boundary
         self._cache: Dict[str, Optional[gpd.GeoDataFrame]] = {}
-        # All tags enabled by default
         self.enabled_tags: Dict[str, bool] = {k: True for k in PCI_OSM_TAGS}
+
+    def _cache_path(self, name: str) -> str:
+        return os.path.join(
+            _get_cache_dir(),
+            f"amenity_{_boundary_hash(self.boundary)}_{name}.pkl"
+        )
 
     def set_enabled_tags(self, tags: Dict[str, bool]):
         """
@@ -113,10 +135,20 @@ class OSMDataFetcher:
         return amenities
 
     def fetch_category(self, name: str) -> Optional[gpd.GeoDataFrame]:
-        """Fetch a single amenity category (result cached in memory)."""
+        """Fetch a single amenity category (file-cached)."""
         if name in self._cache:
             return self._cache[name]
 
+        # Try loading from file cache first
+        cache_file = self._cache_path(name)
+        if os.path.exists(cache_file):
+            print(f"   📂 {name}: loading from file cache")
+            with open(cache_file, "rb") as f:
+                gdf = pickle.load(f)
+            self._cache[name] = gdf
+            return gdf
+
+        # Fall back to OSM
         tags = PCI_OSM_TAGS.get(name)
         if tags is None:
             raise KeyError(f"Unknown amenity category: {name}")
@@ -130,6 +162,11 @@ class OSMDataFetcher:
 
             gdf = gdf.to_crs("EPSG:4326")
             print(f"   ✓  {name}: {len(gdf)} features")
+
+            # Save to file cache
+            with open(cache_file, "wb") as f:
+                pickle.dump(gdf, f)
+
             self._cache[name] = gdf
             return gdf
 
@@ -168,6 +205,12 @@ class SupplierDataFetcher:
         self._cache: Dict[str, Optional[gpd.GeoDataFrame]] = {}
         self.enabled_tags: Dict[str, bool] = {k: True for k in BCI_SUPPLIER_TAGS}
 
+    def _cache_path(self, name: str) -> str:
+        return os.path.join(
+            _get_cache_dir(),
+            f"supplier_{_boundary_hash(self.boundary)}_{name}.pkl"
+        )
+
     def set_enabled_tags(self, tags: Dict[str, bool]):
         for key, val in tags.items():
             if key in self.enabled_tags:
@@ -197,6 +240,17 @@ class SupplierDataFetcher:
     def _fetch_one(self, name: str, tags: dict) -> Optional[gpd.GeoDataFrame]:
         if name in self._cache:
             return self._cache[name]
+
+        # Try loading from file cache first
+        cache_file = self._cache_path(name)
+        if os.path.exists(cache_file):
+            print(f"   📂 {name}: loading from file cache")
+            with open(cache_file, "rb") as f:
+                gdf = pickle.load(f)
+            self._cache[name] = gdf
+            return gdf
+
+        # Fall back to OSM
         try:
             gdf = ox.features_from_polygon(self.boundary, tags=tags)
             if gdf is not None and len(gdf) > 0:
@@ -204,8 +258,15 @@ class SupplierDataFetcher:
                 print(f"   ✓  {name}: {len(gdf)} features")
             else:
                 gdf = None
+
+            # Save to file cache
+            if gdf is not None:
+                with open(cache_file, "wb") as f:
+                    pickle.dump(gdf, f)
+
             self._cache[name] = gdf
             return gdf
+
         except Exception as exc:
             print(f"   ⚠  {name}: failed ({exc})")
             self._cache[name] = None
