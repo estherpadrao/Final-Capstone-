@@ -55,8 +55,8 @@ Each uses its own decay rate (β) and is combined into a single normalised score
                    │   boundary      │
                    │   (OSM/GeoJSON) │
                    │ • Build H3 hex  │
-                   │   grid (res 8,  │
-                   │   ~460 m cells) │
+                   │   grid (res8,   │
+                   │ ~500 m radius)  │
                    │ • Fetch OSM     │
                    │   amenities +   │
                    │   suppliers     │
@@ -91,29 +91,30 @@ Each uses its own decay rate (β) and is combined into a single normalised score
                │ (cached per mode)       │
                │          ↓              │
                │ Hansen accessibility    │
-               │ A_i = Σ M_j ×          │
-               │   exp(−β × t_ij) ×     │
-               │   CostAdj_i            │
+               │ A_i = Σ M_j ×           │
+               │   exp(−β × t_ij) ×      │
+               │   CostAdj_i             │
                │          ↓              │
                │ PCI: active-street      │
                │ bonus + normalise       │
                │ → score [0–100]         │
                │          ↓              │
                │ BCI: 3 components ×     │
-               │ own β → combine         │
+               │ own β + airport and     │
+               | highway bonus→ combine  │
                │ → score [0–100]         │
                └────────────┬────────────┘
                             │
           ┌─────────────────▼──────────────────┐
-          │              RESULTS                │
+          │              RESULTS               │
           │────────────────────────────────────│
-          │  Interactive maps (Folium/Leaflet)  │
-          │  Topography & component plots       │
-          │  Statistics: mean · Gini · quantile │
-          │  Neighbourhood-level breakdown      │
-          │  Comparative analysis (PCI vs BCI)  │
-          │  Sensitivity & scenario testing     │
-          │  Saved to webapp/results/*.pkl      │
+          │  Interactive maps (Folium/Leaflet) │
+          │  Topography & component plots      │
+          │  Statistics: mean · quantile       │
+          │  Neighbourhood-level breakdown     │
+          │  Comparative analysis (PCI vs BCI) │
+          │  Sensitivity & scenario testing    │
+          │  Saved to webapp/results/*.pkl     │
           └────────────────────────────────────┘
 ```
 
@@ -166,7 +167,7 @@ When you click **▶ PCI** or **▶ BCI** for the first time on a city, the pipe
 | Build Network | Walk/bike/drive/transit graph construction, Census ACS fetch | 2–8 min |
 | Compute | Dijkstra travel times (all hex pairs), accessibility model, scoring | 1–5 min |
 
-A **status bar** at the bottom of the page shows the current stage and completion.
+A **status log** at the bottom of the page shows the current stage and completion.
 
 ### Subsequent runs — parameter changes only (~10–60 sec)
 
@@ -180,7 +181,6 @@ After the network is built, changing parameters (β, weights, tag toggles) only 
 | BCI β values | That component's accessibility → BCI |
 | City change | Everything — full rebuild |
 
-Click **↺ Recompute** in the sidebar after changing parameters.
 
 ### Restoring saved results (~5–15 sec)
 
@@ -209,12 +209,12 @@ Each section has a collapsible **ⓘ explanation box** — click to read what th
 |-----|---------|
 | **About** | Methodology overview and data sources |
 | **PCI** | Topography plots, 3D surface, component breakdown, interactive map, neighbourhood table, distribution |
-| **BCI** | Mass maps (market/labour/supplier), component plots, interactive BCI map, distribution |
+| **BCI** | Topography plots, 3D surface, component breakdown, interactive map, neighbourhood table, distribution |
 | **Compare** | Correlation stats, scatter plot, distribution comparison, spatial side-by-side map — unlocks after both PCI and BCI are run |
 | **Diagnostics** | Network validation (edge/node counts, mode coverage), mass layer summaries |
 | **Sensitivity** | One-at-a-time parameter sensitivity: tornado chart + score-change table. PCI and BCI results stack on top of each other |
 | **Scenario Testing** | Interactive Leaflet map; modify amenities, suppliers, or travel-time edges and see the delta on the score map |
-
+| **Hidden Trends** | Batch simulation of random scenario testings across low, medium and high PCI or BCI tiers; includes the same scenarios as Scenario Testing. Graphs that show how changes in different tiers impact the overall city score. 
 ---
 
 ## Where to Find Results
@@ -242,56 +242,73 @@ If you export any static plots outside the webapp, they land in `Outputs/<CityNa
 ## Project Structure
 
 ```
-connectivity_pipeline/
-│
-├── core/                       # Shared building blocks (used by both PCI and BCI)
-│   ├── h3_helper.py            # H3 hex grid utilities
-│   ├── osm_fetcher.py          # OSM amenity + supplier data fetcher
-│   ├── boundary_grid.py        # City boundary fetch + grid construction
-│   ├── census_fetcher.py       # US Census ACS + TIGER data
-│   ├── mass_calculator.py      # PCI weighted mass surface + Gaussian smoothing
-│   ├── network_builder.py      # Multi-modal network (walk/bike/drive/transit)
-│   └── city_config.py          # City configuration registry
-│
-├── pci/
-│   ├── pci_calculator.py       # Hansen accessibility model + PCI scoring
-│   ├── pci_plots.py            # Topography, 3D surface, component, distribution plots
-│   ├── pci_maps.py             # Interactive Folium map + neighbourhood overlays
-│   ├── pci_stats.py            # Mean, Gini, quantiles
-│   └── pci_analysis.py         # Unified analysis interface (imports from above)
-│
-├── bci/
-│   ├── bci_masses.py           # Market, Labour, Supplier mass calculators
-│   ├── bci_calculator.py       # Per-component Hansen models + BCI final score
-│   ├── bci_plots.py            # Mass maps, component plots, distribution
-│   ├── bci_maps.py             # Interactive BCI Folium map
-│   ├── bci_stats.py            # Mean, Gini, quantiles
-│   └── bci_analysis.py         # Unified analysis interface
-│
-├── analysis/
-│   ├── comparative_analysis.py # PCI vs BCI: correlations, spatial maps, quadrant
-│   ├── sensitivity.py          # One-at-a-time (OAT) parameter sensitivity
-│   ├── network_diagnostics.py  # Network validation + topography diagnostics
-│   ├── isochrones.py           # Isochrone-based accessibility analysis
-│   ├── impact.py               # Scenario testing (fast/slow paths, non-destructive)
-│   └── shared.py               # Shared helpers (neighbourhood stats, colour palettes)
-│
-├── webapp/
-│   ├── app.py                  # Flask app — 40+ API routes, session management
-│   ├── about.md                # About tab markdown content
-│   ├── results/                # Persisted results (city-specific .pkl files)
-│   ├── templates/
-│   │   ├── index.html          # Single-page app shell
-│   │   └── partials/           # One HTML file per tab + sidebar
-│   └── static/
-│       ├── css/index.css       # Global stylesheet
-│       └── js/app.js           # Client-side state + API wrappers + map logic
-│
-├── data/                       # City data files (gitignored)
-│   └── muni_gtfs-current/      # San Francisco GTFS transit feed
-│
-├── requirements.txt
-└── environment.yml
+  connectivity_pipeline/
+  │
+  ├── core/                       # Shared building blocks (used by both PCI and BCI)
+  │   ├── h3_helper.py            # H3 hex grid utilities
+  │   ├── osm_fetcher.py          # OSM amenity + supplier data fetcher
+  │   ├── boundary_grid.py        # City boundary fetch + grid construction
+  │   ├── census_fetcher.py       # US Census ACS + TIGER data
+  │   ├── mass_calculator.py      # PCI weighted mass surface + Gaussian smoothing
+  │   ├── network_builder.py      # Multi-modal network (walk/bike/drive/transit)
+  │   └── city_config.py          # City configuration registry
+  │
+  ├── pci/
+  │   ├── pci_calculator.py       # Hansen accessibility model + PCI scoring
+  │   ├── pci_plots.py            # Topography, 3D surface, component, distribution plots
+  │   ├── pci_maps.py             # Interactive Folium map + neighbourhood overlays
+  │   ├── pci_stats.py            # Mean, Gini, quantiles
+  │   └── pci_analysis.py         # Unified analysis interface (imports from above)
+  │
+  ├── bci/
+  │   ├── bci_masses.py           # Market, Labour, Supplier mass calculators
+  │   ├── bci_calculator.py       # Per-component Hansen models + BCI final score
+  │   ├── bci_plots.py            # Mass maps, component plots, distribution
+  │   ├── bci_maps.py             # Interactive BCI Folium map
+  │   ├── bci_stats.py            # Mean, Gini, quantiles
+  │   └── bci_analysis.py         # Unified analysis interface
+  │
+  ├── analysis/
+  │   ├── comparative_analysis.py # PCI vs BCI: correlations, spatial maps, quadrant
+  │   ├── sensitivity.py          # One-at-a-time (OAT) parameter sensitivity
+  │   ├── network_diagnostics.py  # Network validation + topography diagnostics
+  │   ├── isochrones.py           # Isochrone-based accessibility analysis
+  │   ├── impact.py               # Scenario testing (fast/slow paths, non-destructive)
+  │   └── shared.py               # Shared helpers (neighbourhood stats, colour palettes)
+  │
+  ├── webapp/
+  │   ├── app.py                  # Flask app — 40+ API routes, session management
+  │   ├── about.md                # About tab markdown content
+  │   ├── results/                # Persisted results (city-specific .pkl files)
+  │   ├── templates/
+  │   │   ├── index.html          # Single-page app shell
+  │   │   └── partials/           # One HTML file per tab + sidebar
+  │   └── static/
+  │       ├── css/index.css       # Global stylesheet
+  │       └── js/app.js           # Client-side state + API wrappers + map logic
+  │
+  ├── data/                       # City data files (gitignored)
+  │   └── muni_gtfs-current.zip/     # San Francisco GTFS transit feed
+  │   └── sf_polygon.geojson
+  │   └── sf_neighborhoods.geojson
+  │   └── gtfs_bronx.zip/
+  │   └── bronx_polygon.geojson
+  │   └── bronx_neighborhoods.geojson
+  │   └── gtfs_brooklyn.zip/
+  │   └── brooklyin_polygon.geojson
+  │   └── brooklyn_neighborhoods.geojson
+  │   └── gtfs_queens.zip/
+  │   └── queens_polygon.geojson
+  │   └── queens_neighborhoods.geojson
+  │   └── gtfs_staten_island.zip/
+  │   └── staten_island_polygon.geojson
+  │   └── staten_island_neighborhoods.geojson
+  │   └── gtfs_manhattan.zip/
+  │   └── manhattan_polygon.geojson
+  │   └── manhattan_neighborhoods.geojson
+  ├── requirements.txt
+  └── environment.yml
+└── README.md
 ```
 
 ---
@@ -308,6 +325,8 @@ These are set per city and are not exposed in the UI.
 | `state_fips` / `county_fips` | US Census FIPS codes |
 | `census_year` | ACS 5-year survey year |
 | `gtfs_path` | Path to GTFS transit zip |
+| `polygon_path` | Path to polygon GEOJSON |
+| `neighborhoods_file` | Path to neighborhoods GEOJSON |
 | `travel_speeds` | Mode-specific speeds (km/h) |
 | `travel_costs` | Mode-specific trip costs (USD) |
 | `time_penalties` | Transit wait, parking, bike unlock (min) |
@@ -346,7 +365,8 @@ These are set per city and are not exposed in the UI.
 2. Add an entry to `CITY_CONFIGS` following the pattern of an existing city.
 3. Place the GTFS zip at the path set in `gtfs_path` (under `data/`).
 4. For a custom boundary: set `use_local_polygon: True` and point `local_polygon_path` to a GeoJSON file. Otherwise the boundary is fetched automatically from OpenStreetMap.
-5. Restart the Flask app — the city appears in the dropdown automatically.
+5. For neighborhood comparison: Add a neighborhood GeoJSON file to `neighborhoods_file`.
+6. Restart the Flask app — the city appears in the dropdown automatically.
 
 ---
 
