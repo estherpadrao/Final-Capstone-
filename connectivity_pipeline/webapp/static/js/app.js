@@ -157,7 +157,7 @@ const PCI_STAT_MAP = {
   raw_mean: 'Raw Mean ✦', raw_median: 'Raw Median ✦', raw_std: 'Raw Std Dev ✦'
 };
 const BCI_STAT_MAP = {
-  mean: 'Mean BCI', median: 'Median', std: 'Std Dev',
+  city_bci: 'City BCI', mean: 'Mean BCI', median: 'Median', std: 'Std Dev', 
   n_hexagons: 'Hexagons', cv_pct: 'CV %',
   corr_market_bci: 'r(Market)', corr_labour_bci: 'r(Labour)',
   corr_supplier_bci: 'r(Supplier)',
