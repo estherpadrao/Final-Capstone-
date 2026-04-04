@@ -69,4 +69,14 @@ def compute_bci_stats(bci: pd.Series, grid: HexGrid, bci_calc=None) -> dict:
 
     base.update({k: v for k, v in summary.items()
                  if k not in {"mean", "median", "std", "min", "max", "n_hexagons"}})
+    # Area-weighted citywide BCI — mirrors city_pci in pci_stats.py
+    if "area_m2" in grid.gdf.columns:
+        gdf_v = grid.gdf[grid.gdf["hex_id"].isin(valid.index)].copy()
+        gdf_v["_bci"] = gdf_v["hex_id"].map(valid)
+        total_area = gdf_v["area_m2"].sum()
+        if total_area > 0:
+            base["city_bci"] = round(
+                float((gdf_v["_bci"] * gdf_v["area_m2"]).sum() / total_area), 2
+            )
+
     return base
