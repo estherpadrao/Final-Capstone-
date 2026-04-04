@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: final-capstone
+    name: final-capstone-
     runtime: python
     rootDir: connectivity_pipeline
     buildCommand: pip install -r requirements.txt
