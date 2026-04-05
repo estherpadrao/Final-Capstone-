@@ -826,19 +826,13 @@ def _build_result(
     baseline:       pd.Series,
     modified:       pd.Series,
     affected_hexes: List[str],
-    city_name:      str,
 ) -> dict:
     delta = (modified - baseline).reindex(baseline.index)
     return {
         "stats":          compute_impact_stats(baseline, modified),
-        "delta_map_html": make_delta_map(
-            grid.gdf, delta, baseline, modified, city_name
-        )._repr_html_(),
-        "insight_plot":   make_scenario_insight_plot(
-            grid.gdf, baseline, modified, delta,
-        ),
-        "top_hexes":  top_affected_hexes(grid.gdf, delta),
-        "n_affected": len(affected_hexes),
+        "n_affected":     len(affected_hexes),
+        "delta_map_html": make_delta_map(grid.gdf, delta, baseline, modified)._repr_html_(),
+        "top_hexes":      top_affected_hexes(grid.gdf, delta),
     }
 
 
@@ -886,175 +880,6 @@ def compute_impact_stats(baseline: pd.Series, modified: pd.Series) -> dict:
         "p75_delta":            round(float(delta.quantile(0.75)), 2),
         "p90_delta":            round(float(delta.quantile(0.90)), 2),
     }
-
-
-def make_scenario_insight_plot(
-    grid_gdf:  gpd.GeoDataFrame,
-    baseline:  pd.Series,
-    modified:  pd.Series,
-    delta:     pd.Series,
-    index_label: str = "Score",
-) -> str:
-    """Three-panel insight figure returned as a base64 PNG string.
-
-    Panel 1 — Distribution shift (KDE before/after)
-        Shows whether the scenario shifts the whole score distribution or
-        only the tails.  Green fill = the modified curve exceeds baseline
-        (more hexes in that range gained); red fill = fewer hexes there.
-
-    Panel 2 — Baseline score vs Δ score scatter
-        Each point is one hex.  The trend line answers the equity question:
-          • Negative slope → progressive: low-scoring (underserved) hexes
-            benefit more than high-scoring ones.
-          • Positive slope → regressive: already well-connected hexes gain
-            the most (or the underserved ones lose the most).
-          • Flat → effect is spatially uniform.
-
-    Panel 3 — Mean Δ per neighbourhood (top/bottom 15 by absolute impact)
-        Gives the political/planning read: which named areas win or lose.
-        Omitted if no neighbourhood column is present in the grid.
-    """
-    matplotlib.use("Agg")
-    from analysis.shared import _fig_to_base64
-
-    # ── Webapp dark-theme colours ──────────────────────────────────────────
-    BG      = "#12141f"
-    SURFACE = "#1a1d2e"
-    TEXT    = "#e8eaf0"
-    MUTED   = "#7b7f9e"
-    ACCENT  = "#7c6ee0"
-    GREEN   = "#4caf50"
-    RED     = "#ef5350"
-    GRIDL   = "#2a2d3e"
-
-    b = baseline.dropna()
-    m = modified.dropna()
-    d = delta.dropna()
-
-    has_nb = "neighborhood" in grid_gdf.columns
-    ncols  = 3 if has_nb else 2
-    fig, axes = plt.subplots(1, ncols, figsize=(8 * ncols, 6.5))
-    fig.patch.set_facecolor(BG)
-    for ax in axes:
-        ax.set_facecolor(SURFACE)
-        ax.tick_params(colors=TEXT, labelsize=8)
-        ax.xaxis.label.set_color(TEXT)
-        ax.yaxis.label.set_color(TEXT)
-        ax.title.set_color(TEXT)
-        for sp in ax.spines.values():
-            sp.set_edgecolor(GRIDL)
-
-    # ── Panel 1: distribution shift ────────────────────────────────────────
-    ax1 = axes[0]
-    x_lo = min(b.min(), m.min()) - 2
-    x_hi = max(b.max(), m.max()) + 2
-    xs   = np.linspace(x_lo, x_hi, 300)
-    if len(b) > 1 and len(m) > 1:
-        kde_b = gaussian_kde(b)(xs)
-        kde_m = gaussian_kde(m)(xs)
-        ax1.plot(xs, kde_b, color=MUTED,   lw=2, label="Baseline")
-        ax1.plot(xs, kde_m, color=ACCENT,  lw=2, label="Modified")
-        ax1.fill_between(xs, kde_b, kde_m, where=(kde_m >= kde_b),
-                         alpha=0.25, color=GREEN, label="More hexes here")
-        ax1.fill_between(xs, kde_b, kde_m, where=(kde_m <  kde_b),
-                         alpha=0.25, color=RED,   label="Fewer hexes here")
-    ax1.set_xlabel(index_label, fontsize=9)
-    ax1.set_ylabel("Density", fontsize=9)
-    ax1.set_title("Score Distribution Before vs After", fontsize=10, pad=10)
-    ax1.legend(fontsize=8, labelcolor=TEXT, facecolor=SURFACE, edgecolor=GRIDL,
-               framealpha=0.9)
-    ax1.yaxis.grid(True, color=GRIDL, linewidth=0.5)
-    ax1.margins(x=0.05, y=0.12)
-
-    # ── Panel 2: baseline vs delta scatter ─────────────────────────────────
-    ax2 = axes[1]
-    common = b.index.intersection(d.index)
-    bv = b.reindex(common).values
-    dv = d.reindex(common).values
-    pt_colors = np.where(dv > 0, GREEN, np.where(dv < 0, RED, MUTED))
-    ax2.scatter(bv, dv, c=pt_colors, alpha=0.45, s=22, linewidths=0,
-                zorder=3)
-    ax2.axhline(0, color=MUTED, lw=1.2, linestyle="--",
-                label="No change", zorder=2)
-
-    if len(bv) > 2:
-        slope, intercept = np.polyfit(bv, dv, 1)
-        xs2 = np.linspace(bv.min(), bv.max(), 100)
-        trend_col = GREEN if slope < 0 else RED
-        ax2.plot(xs2, slope * xs2 + intercept, color=trend_col,
-                 lw=2, linestyle="--",
-                 label=f"Trend  (slope {slope:+.3f})")
-        ax2.legend(fontsize=8, labelcolor=TEXT, facecolor=SURFACE,
-                   edgecolor=GRIDL, framealpha=0.9)
-
-        if slope < -0.01:
-            note, nc = "Progressive — underserved areas benefit more", GREEN
-        elif slope > 0.01:
-            note, nc = "Regressive — well-served areas benefit more", RED
-        else:
-            note, nc = "Uniform — effect evenly distributed", MUTED
-        ax2.text(0.04, 0.97, note, transform=ax2.transAxes,
-                 fontsize=8.5, color=nc, va="top",
-                 bbox=dict(boxstyle="round,pad=0.3", facecolor=SURFACE,
-                           edgecolor=GRIDL, alpha=0.85))
-
-    # Colour guide for scatter dots
-    ax2.scatter([], [], color=GREEN, s=40, label="Score improved (Δ > 0)")
-    ax2.scatter([], [], color=RED,   s=40, label="Score worsened (Δ < 0)")
-
-    ax2.set_xlabel(f"Baseline {index_label} (before scenario)", fontsize=9)
-    ax2.set_ylabel("Score Change (Δ after − before)", fontsize=9)
-    ax2.set_title("Who Benefits?\nDo Low-Scoring or High-Scoring Hexes Gain More?",
-                  fontsize=10, pad=10)
-    ax2.yaxis.grid(True, color=GRIDL, linewidth=0.5)
-    ax2.margins(x=0.08, y=0.15)
-
-    # ── Panel 3: neighbourhood bar chart ───────────────────────────────────
-    if has_nb:
-        ax3 = axes[2]
-        gdf = grid_gdf[["hex_id", "neighborhood"]].copy()
-        gdf["delta"] = gdf["hex_id"].map(delta)
-        nb_delta = (gdf.dropna(subset=["delta"])
-                       .groupby("neighborhood")["delta"]
-                       .mean()
-                       .sort_values())
-
-        # Keep at most 15 bottom + 15 top to avoid an unreadable wall of bars
-        if len(nb_delta) > 30:
-            nb_delta = pd.concat([nb_delta.head(15), nb_delta.tail(15)])
-
-        bar_colors = [GREEN if v >= 0 else RED for v in nb_delta.values]
-        bars = ax3.barh(nb_delta.index, nb_delta.values,
-                        color=bar_colors, alpha=0.82)
-        ax3.axvline(0, color=MUTED, lw=1.2)
-        # Value labels on bars
-        for bar, val in zip(bars, nb_delta.values):
-            ha   = "left" if val >= 0 else "right"
-            xpos = val + (nb_delta.abs().max() * 0.015) * (1 if val >= 0 else -1)
-            ax3.text(xpos, bar.get_y() + bar.get_height() / 2,
-                     f"{val:+.3f}", va="center", ha=ha,
-                     fontsize=6.5, color=TEXT)
-        ax3.set_xlabel("Mean Score Change (Δ)", fontsize=9)
-        ax3.set_title("Which Neighbourhoods Win or Lose?\n(top/bottom 15 by impact)",
-                      fontsize=10, pad=10)
-        ax3.tick_params(axis="y", labelsize=7)
-        ax3.xaxis.grid(True, color=GRIDL, linewidth=0.5)
-        for lbl in ax3.get_yticklabels():
-            lbl.set_color(TEXT)
-        # Legend
-        ax3.barh([], [], color=GREEN, alpha=0.82, label="Net improvement")
-        ax3.barh([], [], color=RED,   alpha=0.82, label="Net degradation")
-        ax3.legend(fontsize=8, labelcolor=TEXT, facecolor=SURFACE,
-                   edgecolor=GRIDL, framealpha=0.9, loc="lower right")
-        # Padding so value labels don't clip
-        x_lo, x_hi = ax3.get_xlim()
-        pad = nb_delta.abs().max() * 0.15
-        ax3.set_xlim(x_lo - pad, x_hi + pad)
-
-    plt.tight_layout(pad=2.5)
-    result = _fig_to_base64(fig)
-    plt.close(fig)
-    return result
 
 
 # ---------------------------------------------------------------------------
