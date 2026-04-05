@@ -125,10 +125,17 @@ class BCIMassCalculator:
         P = self.population.copy()
         Y = self.income_filled.copy()
 
-        if normalize_income:
-            Y_median = Y.median()
-            if Y_median and Y_median > 0:
+        Y_median = Y.median()
+
+        # fill missing income first, so populated hexes don't collapse to zero market mass
+        if pd.notna(Y_median) and Y_median > 0:
+            Y = Y.fillna(Y_median)
+
+            if normalize_income:
                 Y = Y / Y_median   # relative income: 1.0 = city median
+        else:
+            # fallback if median cannot be computed
+            Y = Y.fillna(1.0 if normalize_income else 0.0)
 
         self.market_mass = (P * Y).fillna(0).clip(lower=0)
         self.market_mass.name = "market_mass"
