@@ -315,7 +315,7 @@ def run_pci_amenity_removal(
         ham.mass          = orig_mass
         ham._accessibility = orig_access
 
-    return _build_result(grid, baseline, pci_mod, target_hexes, s.get("city_name", ""))
+    return _build_result(grid, baseline, pci_mod, target_hexes)
 
 
 # ---------------------------------------------------------------------------
@@ -387,7 +387,7 @@ def run_pci_amenity_addition(
         ham.mass          = orig_mass
         ham._accessibility = orig_access
 
-    return _build_result(grid, baseline, pci_mod, [hex_id], s.get("city_name", ""))
+    return _build_result(grid, baseline, pci_mod, [hex_id])
 
 
 # ---------------------------------------------------------------------------
@@ -448,7 +448,7 @@ def run_pci_edge_penalty(
             except Exception:
                 pass
 
-    return _build_result(grid, baseline, pci_mod, target_hexes, s.get("city_name", ""))
+    return _build_result(grid, baseline, pci_mod, target_hexes)
 
 
 # ---------------------------------------------------------------------------
@@ -528,7 +528,7 @@ def run_pci_edge_removal(
             except Exception:
                 pass
 
-    result = _build_result(grid, baseline, pci_mod, target_hexes, s.get("city_name", ""))
+    result = _build_result(grid, baseline, pci_mod, target_hexes)
     if warning:
         result["warning"] = warning
     return result
@@ -590,7 +590,7 @@ def run_bci_supplier_change(
     finally:
         bci_hansen.accessibility = orig_access
 
-    return _build_result(grid, baseline, bci_mod, target_hexes, s.get("city_name", ""))
+    return _build_result(grid, baseline, bci_mod, target_hexes)
 
 
 # ---------------------------------------------------------------------------
@@ -665,7 +665,7 @@ def run_bci_edge_penalty(
         bci_hansen._travel_times = orig_travel_times
         bci_hansen.accessibility = orig_access
 
-    return _build_result(grid, baseline, bci_mod, target_hexes, s.get("city_name", ""))
+    return _build_result(grid, baseline, bci_mod, target_hexes)
 
 
 # ---------------------------------------------------------------------------
@@ -763,7 +763,7 @@ def run_bci_edge_removal(
         bci_hansen._travel_times = orig_travel_times
         bci_hansen.accessibility = orig_access
 
-    result = _build_result(grid, baseline, bci_mod, target_hexes, s.get("city_name", ""))
+    result = _build_result(grid, baseline, bci_mod, target_hexes)
     if warning:
         result["warning"] = warning
     return result
