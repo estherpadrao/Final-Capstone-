@@ -11,7 +11,7 @@ Both indices use a **Hansen gravity model** with exponential distance decay, mul
 
 ## Demo
 
-> 📹 **Video walkthrough:** *(Loom link coming soon)*
+> [📹 **Video walkthrough:** *(Loom link coming soon)*](https://www.loom.com/share/742bac6ba64a4958a137fb27b52a06d1)
 
 ---
 
@@ -32,9 +32,9 @@ The score accounts for:
 For every hex cell, BCI answers: *"how attractive is this location for businesses, given access to customers, workers, and suppliers?"*
 
 Three independent accessibility components are computed:
-- **Market access** — reach weighted by population × purchasing power (walk + transit)
-- **Labour access** — reach weighted by employed population (drive + transit)
-- **Supplier access** — reach weighted by commercial/industrial density (drive)
+- **Market access** — reach weighted by population × purchasing power 
+- **Labour access** — reach weighted by employed population 
+- **Supplier access** — reach weighted by commercial/industrial density 
 
 Each uses its own decay rate (β) and is combined into a single normalised score.
 
@@ -75,7 +75,6 @@ Each uses its own decay rate (β) and is combined into a single normalised score
                │   STEP 2: BUILD NETWORK │
                │─────────────────────────│
                │ • Walk network (OSMnx)  │
-               │ • Bike network (OSMnx)  │
                │ • Drive network (OSMnx) │
                │ • Transit network       │
                │   (GTFS → stop graph)   │
@@ -321,7 +320,7 @@ These are set per city and are not exposed in the UI.
 
 | Parameter | Description |
 |-----------|-------------|
-| `h3_resolution` | Hex grid resolution (8 ≈ 460 m cells) |
+| `h3_resolution` | Hex grid resolution (8 ≈ 500 m radius cells) |
 | `state_fips` / `county_fips` | US Census FIPS codes |
 | `census_year` | ACS 5-year survey year |
 | `gtfs_path` | Path to GTFS transit zip |
@@ -331,7 +330,7 @@ These are set per city and are not exposed in the UI.
 | `travel_costs` | Mode-specific trip costs (USD) |
 | `time_penalties` | Transit wait, parking, bike unlock (min) |
 | `median_hourly_wage` | For income-adjusted cost-of-time |
-| `park_threshold` | Park coverage fraction above which hex is masked |
+| `park_threshold` | Park coverage fraction above which hex is masked from computation |
 | `max_travel_time` | Dijkstra cutoff (minutes) |
 | `airport_locations` | (lat, lng) pairs for BCI urban interface bonus |
 
